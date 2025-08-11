@@ -44,27 +44,30 @@ function extractGachaLogUrl(cachePath) {
     if (!fs.existsSync(cachePath)) return null;
     const cacheData = fs.readFileSync(cachePath, 'latin1');
     const entries = cacheData.split('1/0/');
+    const urlRegex = /https:\/\/.+?&auth_appid=webview_gacha&.+?authkey=.+?&game_biz=hkrpg_(?:cn|global)/;
+
     for (let i = entries.length - 1; i >= 0; i--) {
         const entry = entries[i];
-        if (entry.includes('http') && entry.includes('getGachaLog')) {
-            const rawUrl = entry.split('\0')[0];
-            return simplifyUrl(rawUrl);
+        const match = entry.match(urlRegex);
+        if (match) {
+            return match[0];
         }
     }
     return null;
 }
 
-function simplifyUrl(rawUrl) {
-    const parsed = url.parse(rawUrl, true);
-    const allowedKeys = ['authkey', 'authkey_ver', 'sign_type', 'game_biz', 'lang'];
-    const filteredQuery = Object.keys(parsed.query)
-        .filter((key) => allowedKeys.includes(key))
-        .reduce((obj, key) => {
-            obj[key] = parsed.query[key];
-            return obj;
-        }, {});
-    return `${parsed.protocol}//${parsed.host}${parsed.pathname}?${new url.URLSearchParams(filteredQuery)}`;
-}
+// 简化url，暂不使用
+// function simplifyUrl(rawUrl) {
+//     const parsed = url.parse(rawUrl, true);
+//     const allowedKeys = ['authkey', 'authkey_ver', 'sign_type', 'game_biz', 'lang'];
+//     const filteredQuery = Object.keys(parsed.query)
+//         .filter((key) => allowedKeys.includes(key))
+//         .reduce((obj, key) => {
+//             obj[key] = parsed.query[key];
+//             return obj;
+//         }, {});
+//     return `${parsed.protocol}//${parsed.host}${parsed.pathname}?${new url.URLSearchParams(filteredQuery)}`;
+// }
 
 // 添加 IPC 接口
 ipcMain.handle('getStarRailUrl', async () => {

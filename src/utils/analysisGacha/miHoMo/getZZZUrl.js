@@ -65,33 +65,19 @@ function extractGachaLogUrl(cachePath) {
     if (!fs.existsSync(cachePath)) {
         throw new Error('缓存文件不存在，请确认游戏已经启动过。');
     }
-
     const cacheData = fs.readFileSync(cachePath, 'latin1');
     const entries = cacheData.split('1/0/');
+    const urlRegex = /https:\/\/.+?&auth_appid=webview_gacha&.+?authkey=.+?&game_biz=nap_(?:cn|global)/;
 
     for (let i = entries.length - 1; i >= 0; i--) {
-        const entry = entries[i];
-        if (entry.includes('http') && entry.includes('getGachaLog')) {
-            const rawUrl = entry.split('\0')[0];
-            return simplifyUrl(rawUrl);
+        const match = entries[i].match(urlRegex);
+        if (match) {
+            return match[0];
         }
     }
-
     return null;
 }
 
-function simplifyUrl(rawUrl) {
-    const parsed = url.parse(rawUrl, true);
-    const allowedKeys = ['authkey', 'authkey_ver', 'sign_type', 'game_biz', 'lang'];
-    const filteredQuery = Object.keys(parsed.query)
-        .filter((key) => allowedKeys.includes(key))
-        .reduce((obj, key) => {
-            obj[key] = parsed.query[key];
-            return obj;
-        }, {});
-
-    return `${parsed.protocol}//${parsed.host}${parsed.pathname}?${new url.URLSearchParams(filteredQuery)}`;
-}
 
 // IPC 接口
 ipcMain.handle('getZZZLink', async () => {
